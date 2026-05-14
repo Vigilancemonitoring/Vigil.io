@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIGIL — Digital Monitoring Solutions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #050810;
+      --surface:   #0b1120;
+      --border:    #1a2a45;
+      --accent:    #00e5ff;
+      --accent2:   #f7931a;
+      --text:      #c8d8f0;
+      --muted:     #4a6080;
+      --danger:    #ff3b5c;
+      --green:     #00ff88;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── SCANLINE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,229,255,0.015) 2px,
+        rgba(0,229,255,0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── NOISE TEXTURE ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9998;
+      opacity: 0.4;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 48px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(5,8,16,0.85);
+      backdrop-filter: blur(12px);
+    }
+
+    .logo {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.4rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-shadow: 0 0 16px rgba(0,229,255,0.6);
+    }
+
+    .logo span { color: var(--danger); }
+
+    nav ul {
+      display: flex;
+      gap: 36px;
+      list-style: none;
+    }
+
+    nav a {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    nav a:hover { color: var(--accent); }
+
+    .nav-cta {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .nav-cta:hover { background: var(--accent); color: var(--bg); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 120px 48px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* radial glow behind hero text */
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 20%; left: 5%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* grid lines */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+    }
+
+    .hero-eyebrow {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.2s forwards;
+    }
+
+    .hero h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(3.5rem, 9vw, 8rem);
+      font-weight: 900;
+      line-height: 0.92;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      max-width: 900px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.4s forwards;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1px var(--accent);
+    }
+
+    .hero-sub {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 520px;
+      margin-top: 32px;
+      line-height: 1.7;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.6s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      margin-top: 48px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.8s forwards;
+    }
+
+    .btn-primary {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 14px 36px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: box-shadow 0.2s, transform 0.15s;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 32px rgba(0,229,255,0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 14px 36px;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* live indicator */
+    .live-badge {
+      position: absolute;
+      top: 110px; right: 48px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--green);
+      opacity: 0;
+      animation: fadeIn 1s 1.2s forwards;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 1.5s infinite;
+    }
+
+    /* stat strip */
+    .stat-strip {
+      display: flex;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin-top: 80px;
+      opacity: 0;
+      animation: fadeIn 1s 1s forwards;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 28px 32px;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-num {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 2rem;
+      color: var(--accent);
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 4px;
+      display: block;
+    }
+
+    /* ── SECTIONS ── */
+    section {
+      padding: 100px 48px;
+    }
+
+    .section-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      max-width: 60px;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.5;
+    }
+
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 700;
+      text-transform: uppercase;
+      line-height: 1.05;
+      max-width: 700px;
+      margin-bottom: 20px;
+    }
+
+    .section-title em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    /* ── SOLUTIONS GRID ── */
+    .solutions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 2px;
+      margin-top: 60px;
+    }
+
+    .sol-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.2s;
+      cursor: default;
+    }
+
+    .sol-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+
+    .sol-card:hover { border-color: var(--accent); transform: translateY(-4px); }
+    .sol-card:hover::before { transform: scaleX(1); }
+
+    .sol-icon {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .sol-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #e8f0ff;
+      margin-bottom: 12px;
+    }
+
+    .sol-desc {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .sol-tag {
+      display: inline-block;
+      margin-top: 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      border: 1px solid rgba(0,229,255,0.3);
+      padding: 3px 10px;
+    }
+
+    /* ── FEATURES ── */
+    #features { background: var(--surface); }
+
+    .features-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      margin-top: 60px;
+      align-items: center;
+    }
+
+    .feature-list { display: flex; flex-direction: column; gap: 0; }
+
+    .feature-item {
+      display: flex;
+      gap: 20px;
+      padding: 24px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .feature-item:first-child { border-top: 1px solid var(--border); }
+
+    .feature-num {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--muted);
+      padding-top: 4px;
+      min-width: 28px;
+    }
+
+    .feature-content h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #e8f0ff;
+      margin-bottom: 6px;
+    }
+
+    .feature-content p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* terminal mockup */
+    .terminal {
+      background: #020509;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .terminal-bar {
+      background: #0d1827;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .terminal-body {
+      padding: 24px 20px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.72rem;
+      line-height: 2;
+      color: var(--text);
+    }
+
+    .t-line { display: flex; gap: 10px; }
+    .t-prompt { color: var(--accent); }
+    .t-cmd { color: var(--text); }
+    .t-output { color: var(--muted); padding-left: 20px; }
+    .t-ok { color: var(--green); }
+    .t-warn { color: var(--accent2); }
+    .t-err { color: var(--danger); }
+
+    .t-cursor {
+      display: inline-block;
+      width: 8px; height: 14px;
+      background: var(--accent);
+      animation: blink 1s step-end infinite;
+      vertical-align: middle;
+    }
+
+    /* ── PRICING ── */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 60px;
+    }
+
+    .plan {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 48px 36px;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .plan.featured {
+      border-color: var(--accent);
+      background: #0b1828;
+    }
+
+    .plan.featured::after {
+      content: 'MOST POPULAR';
+      position: absolute;
+      top: -1px; right: 24px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.2em;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 4px 12px;
+    }
+
+    .plan-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .plan-price {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 2.6rem;
+      color: #e8f0ff;
+    }
+
+    .plan-price sup {
+      font-size: 1rem;
+      color: var(--muted);
+      vertical-align: top;
+      margin-top: 8px;
+      display: inline-block;
+    }
+
+    .plan-period {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 32px;
+      margin-top: 4px;
+    }
+
+    .plan-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin-bottom: 28px;
+    }
+
+    .plan ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .plan ul li {
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .plan ul li::before {
+      content: '—';
+      color: var(--accent);
+      flex-shrink: 0;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .plan-btn {
+      width: 100%;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 14px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .plan.featured .plan-btn {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+      font-weight: 700;
+    }
+
+    .plan-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .plan.featured .plan-btn:hover { background: #33eeff; color: var(--bg); }
+
+    /* ── CHECKOUT MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5,8,16,0.95);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 520px;
+      padding: 48px;
+      position: relative;
+      animation: fadeUp 0.4s forwards;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 20px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover { color: var(--danger); }
+
+    .modal-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.25em;
+      color: var(--accent2);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .modal h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 32px;
+    }
+
+    .checkout-steps {
+      display: flex;
+      gap: 0;
+      margin-bottom: 36px;
+      border: 1px solid var(--border);
+    }
+
+    .cs { flex: 1; padding: 12px; text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 0.62rem; color: var(--muted); border-right: 1px solid var(--border); }
+    .cs:last-child { border-right: none; }
+    .cs.active { background: rgba(0,229,255,0.08); color: var(--accent); }
+
+    .btc-address-box {
+      background: #020509;
+      border: 1px solid var(--border);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .btc-address-label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .btc-address {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--accent2);
+      word-break: break-all;
+      line-height: 1.6;
+    }
+
+    .btc-copy-btn {
+      margin-top: 12px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      background: transparent;
+      border: 1px solid var(--accent2);
+      color: var(--accent2);
+      padding: 7px 18px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .btc-copy-btn:hover { background: var(--accent2); color: var(--bg); }
+
+    .btc-amount-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .btc-amount-row:last-of-type { border-bottom: none; }
+
+    .btc-amount-row .label { color: var(--muted); }
+
+    .btc-amount-row .value {
+      font-family: 'Share Tech Mono', monospace;
+      color: #e8f0ff;
+    }
+
+    .btc-amount-row.total .value {
+      color: var(--accent2);
+      font-size: 1.1rem;
+    }
+
+    .qr-placeholder {
+      width: 120px; height: 120px;
+      margin: 24px auto;
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.58rem;
+      color: var(--muted);
+      text-align: center;
+      background: #020509;
+      padding: 10px;
+    }
+
+    .qr-inner {
+      display: grid;
+      grid-template-columns: repeat(7,1fr);
+      gap: 2px;
+      width: 80px;
+    }
+
+    .qr-inner span {monitor
+    
+      display: block;
+      width: 10px; height: 10px;
+      border-radius: 1px;
+    }
+
+    .modal-note {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+      margin-top: 20px;
+    }
+
+    .modal-note a { color: var(--accent); text-decoration: none; }
+
+    /* plan select inside modal */
+    .plan-selector {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .plan-option {
+      border: 1px solid var(--border);
+      padding: 16px 20px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s;
+    }
+
+    .plan-option:hover, .plan-option.selected { border-color: var(--accent); }
+    .plan-option.selected { background: rgba(0,229,255,0.05); }
+
+    .plan-option-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .plan-option-price {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .form-row label {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .form-row input {
+      background: #020509;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.82rem;
+      width: 100%;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    .form-row input:focus { border-color: var(--accent); }
+
+    .checkout-proceed-btn {
+      width: 100%;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: var(--accent2);
+      border: none;
+      color: var(--bg);
+      padding: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: box-shadow 0.2s;
+    }
+
+    .checkout-proceed-btn:hover { box-shadow: 0 0 28px rgba(247,147,26,0.5); }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    footer .logo { font-size: 1rem; }
+
+    footer p {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── KEYFRAMES ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.5); }
+      50%       { box-shadow: 0 0 0 6px rgba(0,255,136,0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      nav ul { display: none; }
+      .hero { padding: 100px 24px 60px; }
+      section { padding: 70px 24px; }
+      .plans-grid { grid-template-columns: 1fr; }
+      .features-layout { grid-template-columns: 1fr; gap: 40px; }
+      footer { flex-direction: column; gap: 16px; text-align: center; }
+      .stat-strip { flex-direction: column; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); }
+      .modal { padding: 32px 24px; margin: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="logo">VIGIL<span>.</span>IO</div>
+  <ul>
+    <li><a href="#solutions">Solutions</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="nav-cta" onclick="openModal()">Get Started</button>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+
+  <div class="live-badge">
+    <div class="live-dot"></div>
+    SYSTEM OPERATIONAL — 99.97% UPTIME
+  </div>
+
+  <p class="hero-eyebrow">// Advanced Digital Surveillance Platform</p>
+  <h1>Total<br><em>Visibility.</em><br>Zero Blind<br>Spots.</h1>
+  <p class="hero-sub">Monitor devices, track activity, and protect what matters — employees, assets, and family — through a single encrypted dashboard. Real-time. Silent. Precise.</p>
+
+  <div class="hero-actions">
+    <button class="btn-primary" onclick="openModal()">Start Monitoring</button>
+    <button class="btn-secondary" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">View Features</button>
+  </div>
+
+  <div class="stat-strip">
+    <div class="stat">
+      <span class="stat-num">48K+</span>
+      <span class="stat-label">Active Monitors</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">140+</span>
+      <span class="stat-label">Countries Supported</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">256-bit</span>
+      <span class="stat-label">AES Encryption</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">< 1 hour</span>
+      <span class="stat-label">Setup Time</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── SOLUTIONS ── -->
+<section id="solutions">
+  <p class="section-label">01 / Solutions</p>
+  <h2 class="section-title">What Do You <em>Need To Watch?</em></h2>
+
+  <div class="solutions-grid">
+    <div class="sol-card">
+      <span class="sol-icon">💻</span>
+      <div class="sol-title">Device Monitoring</div>
+      <p class="sol-desc">Track all activity across Windows, macOS, Android and iOS devices. Screenshots, keystrokes, app usage, file transfers — captured silently in real time.</p>
+      <span class="sol-tag">STEALTH MODE</span>
+    </div>
+
+    <div class="sol-card">
+      <span class="sol-icon">👔</span>
+      <div class="sol-title">Employee Oversight</div>
+      <p class="sol-desc">Productivity analytics, website usage, idle detection, email & chat monitoring. Full audit trails for compliance and HR investigations.</p>
+      <span class="sol-tag">ENTERPRISE READY</span>
+    </div>
+
+    <div class="sol-card">
+      <span class="sol-icon">❤️</span>
+      <div class="sol-title">Spouse & Partner</div>
+      <p class="sol-desc">GPS location history, social media activity, call logs and messaging apps — know the truth. Discreet installation. No notifications sent to target device.</p>
+      <span class="sol-tag">SILENT INSTALL</span>
+    </div>
+
+    <div class="sol-card">
+      <span class="sol-icon">👶</span>
+      <div class="sol-title">Child Safety</div>
+      <p class="sol-desc">Protect minors from harmful content, predators and dangerous contacts. Set geofences, receive alerts, and review all communications from a parent dashboard.</p>
+      <span class="sol-tag">PARENTAL CONTROL</span>
+    </div>
+
+    <div class="sol-card">
+      <span class="sol-icon">📡</span>
+      <div class="sol-title">Network Intelligence</div>
+      <p class="sol-desc">Deep packet inspection, connected device inventory, bandwidth usage and anomaly detection across your home or corporate network in real time.</p>
+      <span class="sol-tag">ENTERPRISE</span>
+    </div>
+
+    <div class="sol-card">
+      <span class="sol-icon">📍</span>
+      <div class="sol-title">GPS & Location</div>
+      <p class="sol-desc">Continuous GPS tracking with 10-second update intervals. Route history, location timeline, and instant boundary alerts delivered to your phone.</p>
+      <span class="sol-tag">LIVE TRACKING</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <p class="section-label">02 / Platform</p>
+  <h2 class="section-title">Built for <em>Operators</em> Who Demand Results</h2>
+
+  <div class="features-layout">
+    <div class="feature-list">
+      <div class="feature-item">
+        <span class="feature-num">01</span>
+        <div class="feature-content">
+          <h4>Zero-Trace Deployment</h4>
+          <p>Our agent runs at kernel level with no visible process, icon, or battery impact. Survives factory resets and system updates on Android.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-num">02</span>
+        <div class="feature-content">
+          <h4>End-to-End Encryption</h4>
+          <p>All data in transit and at rest is encrypted with AES-256. Our servers never store decryption keys — only you can access your data.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-num">03</span>
+        <div class="feature-content">
+          <h4>Anonymous BTC Payment</h4>
+          <p>No credit cards. No identity trail. Pay in Bitcoin and receive access credentials via encrypted email. No personal data required.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-num">04</span>
+        <div class="feature-content">
+          <h4>Cross-Platform Dashboard</h4>
+          <p>Monitor all targets from a single web panel. iOS and Android companion apps provide real-time push alerts and live feeds.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="feature-num">05</span>
+        <div class="feature-content">
+          <h4>AI-Powered Anomaly Detection</h4>
+          <p>Machine learning flags unusual behavior patterns — odd hours, new contacts, suspicious file access — before incidents escalate.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terminal mockup -->
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="t-dot" style="background:#ff3b5c"></div>
+        <div class="t-dot" style="background:#ffbe00"></div>
+        <div class="t-dot" style="background:#00ff88"></div>
+        &nbsp;&nbsp;
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--muted);letter-spacing:0.1em">VIGIL.IO — live feed</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-line"><span class="t-prompt">›</span><span class="t-cmd">connect --target "device_7F2A" --stealth</span></div>
+        <div class="t-output t-ok">✓ Agent handshake confirmed</div>
+        <div class="t-output t-ok">✓ Encryption tunnel established [AES-256]</div>
+        <div class="t-line" style="margin-top:8px"><span class="t-prompt">›</span><span class="t-cmd">stream --type gps --interval 10s</span></div>
+        <div class="t-output">Lat: 40.7128°N  Lon: 74.0060°W</div>
+        <div class="t-output">Last move: 4 min ago · Speed: 0 km/h</div>
+        <div class="t-line" style="margin-top:8px"><span class="t-prompt">›</span><span class="t-cmd">watch --apps --since 1h</span></div>
+        <div class="t-output">WhatsApp ···········  42 min</div>
+        <div class="t-output t-warn">Telegram ············ 18 min  ⚠ flagged</div>
+        <div class="t-output">Chrome ··············  9 min</div>
+        <div class="t-line" style="margin-top:8px"><span class="t-prompt">›</span><span class="t-cmd">alert --keyword "meeting" --notify</span></div>
+        <div class="t-output t-ok">✓ Keyword watchdog active</div>
+        <div class="t-line" style="margin-top:8px"><span class="t-prompt">›</span><span class="t-cmd"><span class="t-cursor"></span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section id="pricing">
+  <p class="section-label">03 / Pricing</p>
+  <h2 class="section-title">Anonymous Plans. <em>Bitcoin Checkout.</em></h2>
+  <p style="color:var(--muted);font-size:0.9rem;margin-top:12px;max-width:560px">All plans are billed anonymously. Pay with Bitcoin and receive instant access. No KYC. No paper trail.</p>
+
+  <div class="plans-grid">
+    <div class="plan">
+      <div class="plan-name">Recon</div>
+      <div class="plan-price"><sup>$</sup>99</div>
+      <div class="plan-period">/ month — 1 device</div>
+      <hr class="plan-divider" />
+      <ul>
+        <li>GPS tracking (30s intervals)</li>
+        <li>App usage monitoring</li>
+        <li>Web browsing history</li>
+        <li>Basic alert system</li>
+        <li>7-day data retention</li>
+      </ul>
+      <button class="plan-btn" onclick="openModal('Recon', '$99/mo', '0.00143 BTC')">Choose Recon</button>
+    </div>
+
+    <div class="plan featured">
+      <div class="plan-name">Operative</div>
+      <div class="plan-price"><sup>$</sup>150</div>
+      <div class="plan-period">/ month — up to 5 devices</div>
+      <hr class="plan-divider" />
+      <ul>
+        <li>GPS tracking (10s intervals)</li>
+        <li>Keylogger & screenshots</li>
+        <li>Social & messaging capture</li>
+        <li>Call logs & contacts</li>
+        <li>AI anomaly detection</li>
+        <li>30-day data retention</li>
+        <li>Priority support</li>
+      </ul>
+      <button class="plan-btn" onclick="openModal('Operative', '$150/mo', '0.00217 BTC')">Choose Operative</button>
+    </div>
+
+    <div class="plan">
+      <div class="plan-name">Command</div>
+      <div class="plan-price"><sup>$</sup>250</div>
+      <div class="plan-period">/ month — unlimited devices</div>
+      <hr class="plan-divider" />
+      <ul>
+        <li>Everything in Operative</li>
+        <li>Live screen streaming</li>
+        <li>Network packet inspection</li>
+        <li>Custom keyword watchdogs</li>
+        <li>Geofence automation</li>
+        <li>Unlimited data retention</li>
+        <li>Dedicated account manager</li>
+      </ul>
+      <button class="plan-btn" onclick="openModal('Command', '$250/mo', '0.00362 BTC')">Choose Command</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── FORM CTA BANNER ── -->
+<section style="background:#0b1120;border-top:1px solid #1a2a45;border-bottom:1px solid #1a2a45;padding:64px 48px">
+  <div style="max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap">
+    <div>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:0.62rem;letter-spacing:0.28em;color:#00e5ff;text-transform:uppercase;margin-bottom:12px">// Ready to begin?</p>
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;text-transform:uppercase;line-height:1;color:#e8f0ff">Set Up Your <span style="color:#00e5ff">Monitoring Profile</span></h2>
+      <p style="font-size:0.88rem;color:#4a6080;margin-top:12px;max-width:460px;line-height:1.7">Fill out our intake form to tell us who and what to monitor. Every field is optional — submit with as much or as little detail as you like.</p>
+    </div>
+    <a href="" style="font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;background:#00e5ff;color:#050810;border:none;padding:18px 48px;cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-block;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));transition:box-shadow 0.2s" onmouseover="this.style.boxShadow='0 0 32px rgba(0,229,255,0.5)'" onmouseout="this.style.boxShadow='none'">
+      Complete Intake Form →
+    </a>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer id="contact">
+  <div class="logo">VIGIL<span>.</span>IO</div>
+  <p>ENCRYPTED SUPPORT: support@vigil.io &nbsp;·&nbsp; PGP KEY AVAILABLE ON REQUEST</p>
+  <p>© 2026 VIGIL.IO — ALL RIGHTS RESERVED</p>
+</footer>
+
+<!-- ── CHECKOUT MODAL ── -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal" style="max-width:580px;max-height:90vh;overflow-y:auto">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-label">// Secure Checkout — Bitcoin Only</div>
+    <h2 style="margin-bottom:20px">Activate Your Plan</h2>
+
+    <!-- Step indicators — 4 steps -->
+    <div class="checkout-steps" style="margin-bottom:28px">
+      <div class="cs active" id="step1-tab">01 SELECT</div>
+      <div class="cs" id="step2-tab">02 PROFILE</div>
+      <div class="cs" id="step3-tab">03 ACCOUNT</div>
+      <div class="cs" id="step4-tab">04 PAYMENT</div>
+    </div>
+
+    <!-- ── STEP 1: Select plan ── -->
+    <div id="step1">
+      <div class="plan-selector">
+        <div class="plan-option selected" id="opt-recon" onclick="selectPlan('Recon','$99/mo','0.00143 BTC',this)">
+          <span class="plan-option-name">Recon</span>
+          <span class="plan-option-price">0.00143 BTC / mo</span>
+        </div>
+        <div class="plan-option" id="opt-operative" onclick="selectPlan('Operative','$150/mo','0.00217 BTC',this)">
+          <span class="plan-option-name">Operative</span>
+          <span class="plan-option-price">0.00217 BTC / mo</span>
+        </div>
+        <div class="plan-option" id="opt-command" onclick="selectPlan('Command','$250/mo','0.00362 BTC',this)">
+          <span class="plan-option-name">Command</span>
+          <span class="plan-option-price">0.00362 BTC / mo</span>
+        </div>
+      </div>
+      <button class="checkout-proceed-btn" onclick="goStep(2)">Continue &rarr;</button>
+    </div>
+
+    <!-- ── STEP 2: Profile / Intake Form ── -->
+    <div id="step2" style="display:none">
+
+      <!-- CLIENT INFO — required fields -->
+      <div style="margin-bottom:6px">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;margin-bottom:14px">// Your Information <span style="color:var(--danger);margin-left:6px">* Required</span></p>
+
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between">Your Full Name <span style="color:var(--danger);font-size:0.65rem">REQUIRED</span></label>
+          <input type="text" id="p-name" placeholder="Legal or preferred name" />
+          <span class="field-err" id="err-name"></span>
+        </div>
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between">Email Address <span style="color:var(--danger);font-size:0.65rem">REQUIRED</span></label>
+          <input type="email" id="p-email" placeholder="your@protonmail.com" />
+          <span class="field-err" id="err-email"></span>
+        </div>
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between">Phone Number <span style="color:var(--danger);font-size:0.65rem">REQUIRED</span></label>
+          <input type="tel" id="p-phone" placeholder="+1 555 000 0000" />
+          <span class="field-err" id="err-phone"></span>
+        </div>
+        <div class="form-row">
+          <label style="display:flex;justify-content:space-between">Address <span style="color:var(--danger);font-size:0.65rem">REQUIRED</span></label>
+          <input type="text" id="p-address" placeholder="Street, City, Country" />
+          <span class="field-err" id="err-address"></span>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:20px 0" />
+
+      <!-- TARGET INFO — all optional -->
+      <p style="font-family:'Share Tech Mono',monospace;font-size:0.6rem;letter-spacing:0.22em;color:var(--accent);text-transform:uppercase;margin-bottom:4px">// Target Information</p>
+      <p style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;line-height:1.55">All target fields are optional — add what you know.</p>
+
+      <div id="modal-targets-wrap">
+        <div class="modal-target-block" id="mtarget-1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--accent);letter-spacing:0.15em">TARGET 01</span>
+            <button class="remove-target" onclick="removeModalTarget('mtarget-1')" style="visibility:hidden;font-size:0.58rem;padding:3px 10px">✕ REMOVE</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-row">
+              <label>Name / Alias <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+              <input type="text" placeholder="Who to monitor" />
+            </div>
+            <div class="form-row">
+              <label>Relationship <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+              <select><option value="">— Select —</option><option>Spouse/Partner</option><option>Child</option><option>Employee</option><option>Contractor</option><option>Other</option></select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-row">
+              <label>Phone <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+              <input type="tel" placeholder="+1 555 000 0000" />
+            </div>
+            <div class="form-row">
+              <label>Email <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+              <input type="email" placeholder="target@email.com" />
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-row">
+              <label>Device Model <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+              <input type="text" placeholder="e.g. iPhone 15 Pro" />
+            </div>
+            <div class="form-row">
+              <label>Location <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+              <input type="text" placeholder="City or address" />
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Social Media Handles <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+            <input type="text" placeholder="@instagram, Snapchat, TikTok…" />
+          </div>
+          <div class="form-row">
+            <label>Monitoring Focus <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+              <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Messages</div>
+              <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Calls</div>
+              <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Location</div>
+              <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Social</div>
+              <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Apps</div>
+              <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">All Activity</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Notes <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+            <textarea placeholder="Any additional context…" style="min-height:60px"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <button style="width:100%;background:transparent;border:1px dashed rgba(0,229,255,0.3);color:var(--accent);font-family:'Barlow Condensed',sans-serif;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;padding:12px;cursor:pointer;margin-bottom:16px;transition:background 0.2s" onmouseover="this.style.background='rgba(0,229,255,0.05)'" onmouseout="this.style.background='transparent'" onclick="addModalTarget()">+ Add Another Target</button>
+
+      <div id="profile-error" style="display:none;font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:var(--danger);background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.3);padding:10px 14px;margin-bottom:14px;letter-spacing:0.08em"></div>
+
+      <button class="checkout-proceed-btn" onclick="validateProfile()">Continue to Account &rarr;</button>
+    </div>
+
+    <!-- ── STEP 3: Account ── -->
+    <div id="step3" style="display:none">
+      <div class="form-row">
+        <label>Email (for access credentials)</label>
+        <input type="email" placeholder="encrypted@protonmail.com" id="email-input" />
+      </div>
+      <div class="form-row">
+        <label>Choose a password</label>
+        <input type="password" placeholder="Min 12 characters" />
+      </div>
+      <p style="font-size:0.75rem;color:var(--muted);margin-bottom:24px;line-height:1.6">We recommend using a private email address. Access credentials will be sent here after payment confirmation.</p>
+      <button class="checkout-proceed-btn" onclick="goStep(4)">Proceed to Payment &rarr;</button>
+    </div>
+
+    <!-- ── STEP 4: Bitcoin payment ── -->
+    <div id="step4" style="display:none">
+      <div style="margin-bottom:16px">
+        <div class="btc-amount-row">
+          <span class="label">Plan</span>
+          <span class="value" id="modal-plan-name">Recon</span>
+        </div>
+        <div class="btc-amount-row">
+          <span class="label">USD equivalent</span>
+          <span class="value" id="modal-usd">$29/mo</span>
+        </div>
+        <div class="btc-amount-row total">
+          <span class="label">Amount due (BTC)</span>
+          <span class="value" id="modal-btc">0.00042 BTC</span>
+        </div>
+      </div>
+
+      <div class="btc-address-box">
+        <div class="btc-address-label">// Send exact amount to this address</div>
+        <div class="btc-address" id="btc-addr">bc1q4vv9lshc68h4vcvh57p8y6d2vq3u0600a02a92</div>
+        <button class="btc-copy-btn" onclick="copyAddr()">⧉ Copy Address</button>
+      </div>
+
+      <div class="qr-placeholder" id="qr-box">
+        <div class="qr-inner" id="qr-grid"></div>
+      </div>
+
+      <p class="modal-note">
+        Send the exact BTC amount to the address above. Verified on-chain within 1–3 confirmations (~15–30 min). Access credentials will be emailed immediately after confirmation.<br><br>
+        <strong style="color:var(--accent2)">⚠ Do not close this window.</strong> Each address is unique to this session.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .field-err {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.6rem; color: var(--danger);
+    letter-spacing: 0.08em; margin-top: 3px;
+    display: none;
+  }
+  .field-err.show { display: block; }
+  .modal-target-block {
+    background: rgba(0,229,255,0.03);
+    border: 1px solid var(--border);
+    padding: 18px 16px;
+    margin-bottom: 12px;
+  }
+  /* make modal scrollbar styled */
+  .modal::-webkit-scrollbar { width: 4px; }
+  .modal::-webkit-scrollbar-track { background: transparent; }
+  .modal::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+
+<script>
+  // ── STATE ──
+  let selectedPlan = 'Recon';
+  let selectedUSD  = '$99/mo';
+  let selectedBTC  = '0.00143 BTC';
+  let modalTargetCount = 1;
+
+  const btcAddresses = {
+    'Recon':     'bc1q4vv9lshc68h4vcvh57p8y6d2vq3u0600a02a92',
+    'Operative': 'bc1q4vv9lshc68h4vcvh57p8y6d2vq3u0600a02a92',
+    'Command':   'bc1q4vv9lshc68h4vcvh57p8y6d2vq3u0600a02a92',
+  };
+
+  function openModal(plan, usd, btc) {
+    if (plan) {
+      selectedPlan = plan; selectedUSD = usd; selectedBTC = btc;
+      ['opt-recon','opt-operative','opt-command'].forEach(id => document.getElementById(id).classList.remove('selected'));
+      const el = document.getElementById('opt-' + plan.toLowerCase());
+      if (el) el.classList.add('selected');
+    }
+    document.getElementById('checkoutModal').classList.add('open');
+    goStep(1);
+  }
+
+  function closeModal() {
+    document.getElementById('checkoutModal').classList.remove('open');
+  }
+
+  function selectPlan(name, usd, btc, el) {
+    selectedPlan = name; selectedUSD = usd; selectedBTC = btc;
+    document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function goStep(n) {
+    [1,2,3,4].forEach(i => {
+      const el = document.getElementById('step'+i);
+      if (el) el.style.display = (i===n) ? 'block' : 'none';
+      const tab = document.getElementById('step'+i+'-tab');
+      if (tab) tab.classList.toggle('active', i===n);
+    });
+    if (n === 4) {
+      document.getElementById('modal-plan-name').textContent = selectedPlan;
+      document.getElementById('modal-usd').textContent       = selectedUSD;
+      document.getElementById('modal-btc').textContent       = selectedBTC;
+      document.getElementById('btc-addr').textContent = btcAddresses[selectedPlan] || btcAddresses['Recon'];
+      generateQR();
+    }
+    // scroll modal to top on step change
+    const modal = document.querySelector('.modal');
+    if (modal) modal.scrollTop = 0;
+  }
+
+  // ── PROFILE VALIDATION (client fields required) ──
+  function validateProfile() {
+    const fields = [
+      { id: 'p-name',    errId: 'err-name',    label: 'Full name is required' },
+      { id: 'p-email',   errId: 'err-email',   label: 'Email address is required' },
+      { id: 'p-phone',   errId: 'err-phone',   label: 'Phone number is required' },
+      { id: 'p-address', errId: 'err-address', label: 'Address is required' },
+    ];
+    let valid = true;
+    fields.forEach(f => {
+      const input = document.getElementById(f.id);
+      const err   = document.getElementById(f.errId);
+      const empty = !input.value.trim();
+      err.textContent = empty ? f.label : '';
+      err.classList.toggle('show', empty);
+      if (empty) {
+        input.style.borderColor = 'var(--danger)';
+        valid = false;
+      } else {
+        input.style.borderColor = '';
+      }
+    });
+    // email format check
+    const emailVal = document.getElementById('p-email').value.trim();
+    if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      document.getElementById('err-email').textContent = 'Enter a valid email address';
+      document.getElementById('err-email').classList.add('show');
+      document.getElementById('p-email').style.borderColor = 'var(--danger)';
+      valid = false;
+    }
+
+    const profErr = document.getElementById('profile-error');
+    if (!valid) {
+      profErr.textContent = '⚠ Please fill in all required client fields above before continuing.';
+      profErr.style.display = 'block';
+      document.querySelector('.modal').scrollTop = 0;
+    } else {
+      profErr.style.display = 'none';
+      goStep(3);
+    }
+  }
+
+  // ── MODAL TARGET MANAGEMENT ──
+  function addModalTarget() {
+    modalTargetCount++;
+    const n = modalTargetCount;
+    const wrap = document.getElementById('modal-targets-wrap');
+    const id = 'mtarget-' + n;
+    const div = document.createElement('div');
+    div.className = 'modal-target-block';
+    div.id = id;
+    div.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:var(--accent);letter-spacing:0.15em">TARGET 0${n}</span>
+        <button class="remove-target" onclick="removeModalTarget('${id}')" style="font-size:0.58rem;padding:3px 10px">✕ REMOVE</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row"><label>Name / Alias <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><input type="text" placeholder="Who to monitor" /></div>
+        <div class="form-row"><label>Relationship <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><select><option value="">— Select —</option><option>Spouse/Partner</option><option>Child</option><option>Employee</option><option>Contractor</option><option>Other</option></select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row"><label>Phone <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><input type="tel" placeholder="+1 555 000 0000" /></div>
+        <div class="form-row"><label>Email <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><input type="email" placeholder="target@email.com" /></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row"><label>Device Model <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><input type="text" placeholder="e.g. Samsung S24" /></div>
+        <div class="form-row"><label>Location <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><input type="text" placeholder="City or address" /></div>
+      </div>
+      <div class="form-row"><label>Social Media Handles <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><input type="text" placeholder="@instagram, Snapchat, TikTok…" /></div>
+      <div class="form-row">
+        <label>Monitoring Focus <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px">
+          <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Messages</div>
+          <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Calls</div>
+          <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Location</div>
+          <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Social</div>
+          <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">Apps</div>
+          <div class="chip" style="font-size:0.58rem;padding:5px 10px" onclick="toggleChip(this)">All Activity</div>
+        </div>
+      </div>
+      <div class="form-row"><label>Notes <span class="opt-badge" style="font-size:0.48rem;border:1px solid rgba(247,147,26,0.35);color:var(--accent2);padding:1px 5px">OPT</span></label><textarea placeholder="Any additional context…" style="min-height:60px"></textarea></div>`;
+    wrap.appendChild(div);
+  }
+
+  function removeModalTarget(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function toggleChip(el) { el.classList.toggle('active'); }
+
+  function copyAddr() {
+    const addr = document.getElementById('btc-addr').textContent;
+    navigator.clipboard.writeText(addr).then(() => {
+      const btn = document.querySelector('.btc-copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    });
+  }
+
+  function generateQR() {
+    const grid = document.getElementById('qr-grid');
+    grid.innerHTML = '';
+    const addr = document.getElementById('btc-addr').textContent;
+    for (let i = 0; i < 49; i++) {
+      const s = document.createElement('span');
+      const row = Math.floor(i/7), col = i%7;
+      const inCorner = ((row<3&&col<3)||(row<3&&col>3)||(row>3&&col<3));
+      let filled;
+      if (inCorner) { filled = (row===0||row===2||col===0||col===2); }
+      else { filled = ((addr.charCodeAt(i%addr.length)||0)+i*7)%3!==0; }
+      s.style.background = filled ? '#f7931a' : 'transparent';
+      grid.appendChild(s);
+    }
+  }
+
+  document.getElementById('checkoutModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+
+<!-- ══════════════════════════════════════
+     LIVE SUPPORT CHAT
+══════════════════════════════════════ -->
+<div id="chat-bubble" onclick="toggleChat()" title="Live Support">
+  <span id="bubble-icon">💬</span>
+  <span id="bubble-badge" style="display:none">1</span>
+</div>
+
+<div id="chat-window">
+  <div id="chat-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="agent-dot"></div>
+      <div>
+        <div id="agent-name">VIGIL Support</div>
+        <div id="agent-status">Online — reply in &lt;2 min</div>
+      </div>
+    </div>
+    <button id="chat-close" onclick="toggleChat()">×</button>
+  </div>
+  <div id="chat-messages"></div>
+  <div id="chat-input-area">
+    <input type="text" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendMsg()" />
+    <button id="chat-send" onclick="sendMsg()">→</button>
+  </div>
+</div>
+
+<style>
+  #chat-bubble {
+    position:fixed;bottom:28px;right:28px;z-index:5000;
+    width:56px;height:56px;
+    background:var(--accent);display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:1.3rem;
+    animation:chat-pulse 2.5s infinite;
+    clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+  }
+  #bubble-badge {
+    position:absolute;top:-4px;right:-4px;
+    background:var(--danger);color:#fff;
+    font-family:'Share Tech Mono',monospace;font-size:0.6rem;
+    width:18px;height:18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+  }
+  @keyframes chat-pulse {
+    0%,100%{box-shadow:0 0 0 0 rgba(0,229,255,0.4)}
+    70%{box-shadow:0 0 0 12px rgba(0,229,255,0)}
+  }
+  #chat-window {
+    position:fixed;bottom:96px;right:28px;z-index:4999;
+    width:340px;height:480px;
+    background:var(--surface);border:1px solid var(--border);
+    display:none;flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+  }
+  #chat-window.open{display:flex;animation:slideUp 0.3s forwards}
+  @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  #chat-header{
+    padding:14px 18px;background:#0d1827;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  #agent-dot{width:9px;height:9px;border-radius:50%;background:var(--green);animation:dot-pulse 2s infinite}
+  #agent-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:0.95rem;letter-spacing:0.05em;color:#e8f0ff}
+  #agent-status{font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--green);letter-spacing:0.1em;margin-top:2px}
+  #chat-close{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;transition:color 0.2s}
+  #chat-close:hover{color:var(--danger)}
+  #chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  .msg{max-width:82%;padding:10px 13px;font-size:0.82rem;line-height:1.55;animation:fadeUp 0.25s forwards}
+  .msg.agent{background:#0d1827;border:1px solid var(--border);color:var(--text);align-self:flex-start;border-radius:0 8px 8px 8px}
+  .msg.user{background:rgba(0,229,255,0.12);border:1px solid rgba(0,229,255,0.25);color:#e8f0ff;align-self:flex-end;border-radius:8px 0 8px 8px}
+  .msg-meta{font-family:'Share Tech Mono',monospace;font-size:0.5rem;color:var(--muted);margin-top:4px}
+  .typing-dots{display:flex;gap:4px;padding:4px 0}
+  .typing-dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:dot-bounce 1.2s infinite}
+  .typing-dots span:nth-child(2){animation-delay:0.2s}
+  .typing-dots span:nth-child(3){animation-delay:0.4s}
+  #chat-input-area{padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+  #chat-input{flex:1;background:#020509;border:1px solid var(--border);color:var(--text);padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;outline:none;transition:border-color 0.2s}
+  #chat-input:focus{border-color:var(--accent)}
+  #chat-send{background:var(--accent);border:none;color:var(--bg);width:36px;height:36px;cursor:pointer;font-size:1rem;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,6px 100%,0 calc(100% - 6px));transition:box-shadow 0.2s}
+  #chat-send:hover{box-shadow:0 0 16px rgba(0,229,255,0.5)}
+  @keyframes dot-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+  @keyframes dot-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,0.4)}50%{box-shadow:0 0 0 5px rgba(0,255,136,0)}}
+</style>
+
+<script>
+  let chatOpen = false, greeted = false;
+  const agentReplies = [
+    "Got it — I'll flag that for our setup team right away.",
+    "Understood. Which plan are you looking at — Recon, Operative, or Command?",
+    "Happy to help. Can you tell me more about the device(s) involved?",
+    "That's covered under our Operative and Command plans. Want me to walk you through setup?",
+    "Our team can have that configured within the hour on Priority access.",
+    "All data is end-to-end encrypted. Your anonymity is fully protected.",
+    "Bitcoin payment confirms within 1–3 blocks (~15–30 min) then access is instant.",
+    "Yes — the agent runs with no visible process, icon, or notification on the target device.",
+    "You'll receive login credentials to your secure dashboard via encrypted email.",
+    "Let me check that with our technical team — one moment.",
+  ];
+  function toggleChat(){
+    chatOpen=!chatOpen;
+    const win=document.getElementById('chat-window');
+    document.getElementById('bubble-badge').style.display='none';
+    chatOpen ? win.classList.add('open') : win.classList.remove('open');
+    if(chatOpen&&!greeted){greeted=true;setTimeout(showGreeting,400);}
+  }
+  function showGreeting(){
+    appendMsg('agent',"👋 Welcome to VIGIL.IO. How can I help you today? I can assist with plan selection, setup, or any technical questions.");
+    setTimeout(()=>appendMsg('agent',"You can also <a href='vigil-intake-form.html' style='color:var(--accent)'>complete our intake form</a> to get your monitoring profile configured."),1100);
+  }
+  function now(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
+  function appendMsg(role,text){
+    const msgs=document.getElementById('chat-messages');
+    const div=document.createElement('div');
+    div.className='msg '+role;
+    div.innerHTML=text+`<div class="msg-meta">${now()}</div>`;
+    msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+  }
+  function showTyping(){
+    const msgs=document.getElementById('chat-messages');
+    const t=document.createElement('div');
+    t.className='msg agent';t.id='typing-indicator';
+    t.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+    msgs.appendChild(t);msgs.scrollTop=msgs.scrollHeight;
+  }
+  function removeTyping(){const t=document.getElementById('typing-indicator');if(t)t.remove();}
+  function sendMsg(){
+    const input=document.getElementById('chat-input');
+    const text=input.value.trim();if(!text)return;
+    appendMsg('user',text);input.value='';
+    setTimeout(()=>{
+      showTyping();
+      setTimeout(()=>{
+        removeTyping();
+        appendMsg('agent',agentReplies[Math.floor(Math.random()*agentReplies.length)]);
+        sendEmailNotification(text);
+      },1200+Math.random()*800);
+    },400);
+  }
+  function sendEmailNotification(msg){
+    // ── Plug in your email service here ──
+    // Option A — mailto (opens client):
+    // window.open(`mailto:your@email.com?subject=VIGIL+Chat&body=${encodeURIComponent(msg)}`);
+    //
+    // Option B — fetch webhook:
+    // fetch('YOUR_WEBHOOK_URL',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,ts:new Date().toISOString()})});
+    //
+    // Option C — EmailJS:
+    // emailjs.send('SERVICE_ID','TEMPLATE_ID',{message:msg});
+    console.log('[VIGIL CHAT → EMAIL]', msg);
+  }
+  setTimeout(()=>{if(!greeted){document.getElementById('bubble-badge').style.display='flex';}},4000);
+</script>
+</body>
+</html>
